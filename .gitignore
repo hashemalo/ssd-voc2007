@@ -1,0 +1,25 @@
+# Dataset — too large for git (870MB)
+ssd.pytorch/data/VOCdevkit/
+ssd.pytorch/data/*.tar
+
+# Trained weights
+ssd.pytorch/weights/*.pth
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
