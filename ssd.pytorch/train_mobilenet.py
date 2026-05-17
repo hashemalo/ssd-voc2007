@@ -27,7 +27,7 @@ loader = DataLoader(
     num_workers=2
 )
 
-net = build_mobilenet_ssd(num_classes=NUM_CLASSES).to(DEVICE)
+net = build_mobilenet_ssd('train', num_classes=NUM_CLASSES).to(DEVICE)
 optimizer = optim.SGD(net.parameters(), lr=LR, momentum=0.9, weight_decay=5e-4)
 scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 40], gamma=0.1)
 criterion = MultiBoxLoss(NUM_CLASSES, 0.5, True, 0, True, 3, 0.5, False, DEVICE == 'cuda')
@@ -42,7 +42,7 @@ for epoch in range(EPOCHS):
         imgs = imgs.to(DEVICE)
         targets = [t.to(DEVICE) for t in targets]
 
-        out = net(imgs)
+        out = net(imgs)           # returns (loc, cls, priors)
         optimizer.zero_grad()
         loss_l, loss_c = criterion(out, targets)
         loss = loss_l + loss_c

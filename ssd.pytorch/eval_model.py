@@ -25,7 +25,7 @@ def benchmark_speed(model, n=100, input_size=(1, 3, 300, 300)):
 vgg_net = build_ssd('test', 300, 21).to(DEVICE)
 vgg_net.load_weights('weights/ssd300_mAP_77.43_v2.pth')
 
-mob_net = build_mobilenet_ssd(21).to(DEVICE)
+mob_net = build_mobilenet_ssd('test', 21).to(DEVICE)
 mob_net.load_state_dict(torch.load('weights/mobilenet_ssd_epoch50.pth', map_location=DEVICE))
 
 print("=== Model Comparison ===")

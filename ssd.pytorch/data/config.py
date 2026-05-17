@@ -40,3 +40,19 @@ coco = {
     'clip': True,
     'name': 'COCO',
 }
+
+# MobileNetV2-SSD uses 4 feature maps (no 38×38 — MobileNetV2's finest stride is 16)
+# Feature map sizes on 300×300 input: 19×19, 10×10, 5×5, 3×3
+# Anchors per location:               4,      6,      6,    6   (matches loc/cls layer defs)
+mobilenet_voc = {
+    'num_classes': 21,
+    'feature_maps': [19, 10, 5, 3],
+    'min_dim': 300,
+    'steps': [16, 30, 60, 100],
+    'min_sizes': [60, 105, 150, 195],
+    'max_sizes': [105, 150, 195, 240],
+    'aspect_ratios': [[2], [2, 3], [2, 3], [2, 3]],
+    'variance': [0.1, 0.2],
+    'clip': True,
+    'name': 'mobilenet_VOC',
+}
