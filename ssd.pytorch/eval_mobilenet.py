@@ -134,7 +134,7 @@ def write_voc_results_file(all_boxes, dataset):
         with open(filename, 'wt') as f:
             for im_ind, index in enumerate(dataset.ids):
                 dets = all_boxes[cls_ind+1][im_ind]
-                if dets == []:
+                if len(dets) == 0:
                     continue
                 for k in range(dets.shape[0]):
                     f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
