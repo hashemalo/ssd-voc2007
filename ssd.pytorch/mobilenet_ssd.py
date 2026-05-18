@@ -29,7 +29,8 @@ class MobileNetV2SSD(nn.Module):
         with torch.no_grad():
             self.register_buffer('priors', self.priorbox.forward())
 
-        mobilenet = models.mobilenet_v2(pretrained=True)
+        from torchvision.models import MobileNet_V2_Weights
+        mobilenet = models.mobilenet_v2(weights=MobileNet_V2_Weights.DEFAULT)
         features = mobilenet.features
         self.feature_extractor1 = features[:14]   # stride 16 → 19×19, 96ch
         self.feature_extractor2 = features[14:]   # stride 32 → 10×10, 1280ch
