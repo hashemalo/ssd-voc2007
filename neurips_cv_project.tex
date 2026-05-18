@@ -67,7 +67,7 @@
 % Abstract
 % ---------------------------------------------------------------
 \begin{abstract}
-  Deploying object detectors at the edge demands models that are simultaneously accurate and computationally efficient. The Single Shot MultiBox Detector (SSD) achieves strong accuracy with a single forward pass, but its standard VGG16 backbone carries approximately 26 million parameters—too large for many embedded platforms. We investigate the effect of replacing VGG16 with MobileNetV2, a depthwise-separable convolutional backbone with roughly 6.9 million parameters (3.76$\times$ reduction), while holding the SSD detection head, loss function, anchor configuration, and evaluation protocol fixed. Both models are evaluated on the Pascal VOC 2007 benchmark (20 classes, 4,952 test images). VGG16-SSD achieves 77.49\% mAP; MobileNetV2-SSD achieves 54.08\% mAP—a 23.4 point drop. To understand \emph{where} accuracy is lost, we introduce a size-stratified analysis that partitions ground-truth boxes into small ($<$32$^2$ px), medium (32$^2$–96$^2$ px), and large ($\geq$96$^2$ px) bins. MobileNetV2 retains 77.9\% of VGG16's performance on large objects but only 1.5\% on small objects, directly confirming that the missing 38$\times$38 feature map is the primary driver of degradation. We also identify a GPU latency paradox: despite having far fewer FLOPs, MobileNetV2-SSD is $8.4\times$ \emph{slower} than VGG16-SSD on a modern A100 GPU (54.2\,ms vs.\ 6.4\,ms per image), because depthwise separable convolutions are memory-bandwidth-bound on GPU hardware. These findings clarify when and where lightweight SSD variants provide a genuine deployment benefit.
+  Deploying object detectors at the edge demands models that are simultaneously accurate and computationally efficient. The Single Shot MultiBox Detector (SSD) achieves strong accuracy with a single forward pass, but its standard VGG16 backbone carries approximately 26 million parameters—too large for many embedded platforms. We investigate the effect of replacing VGG16 with MobileNetV2, a depthwise-separable convolutional backbone with roughly 6.9 million parameters (3.76$\times$ reduction), while holding the SSD detection head, loss function, anchor configuration, and evaluation protocol fixed. Both models are evaluated on the Pascal VOC 2007 benchmark (20 classes, 4,952 test images). VGG16-SSD achieves 77.49\% mAP; MobileNetV2-SSD achieves 54.08\% mAP—a 23.4 point drop. To understand \emph{where} accuracy is lost, we introduce a size-stratified analysis that partitions ground-truth boxes into small ($<$32$^2$ px), medium (32$^2$–96$^2$ px), and large ($\geq$96$^2$ px) bins. MobileNetV2 retains 77.9\% of VGG16's performance on large objects but only 1.5\% on small objects, directly confirming that the missing 38$\times$38 feature map is the primary driver of degradation. We also identify a GPU latency paradox: despite having $3.8\times$ fewer parameters, MobileNetV2-SSD is $2.8\times$ \emph{slower} than VGG16-SSD on a modern A100 GPU (49.5\,ms vs.\ 18.0\,ms per image). On CPU, however, MobileNetV2-SSD is $10.4\times$ faster (73.7\,ms vs.\ 765.2\,ms), because depthwise separable convolutions are ill-suited to GPU parallelism but highly cache-efficient on CPU. These findings clarify when and where lightweight SSD variants provide a genuine deployment benefit.
 \end{abstract}
 
 % ---------------------------------------------------------------
@@ -88,7 +88,7 @@
 \begin{itemize}
   \item We provide a controlled backbone comparison within a fixed SSD detection framework, isolating the accuracy and latency contribution of backbone choice from all other variables.
   \item We introduce a size-stratified AP analysis using COCO-style area thresholds, quantifying how much of VGG16's performance MobileNetV2 retains at each object scale and directly testing the hypothesis that the missing 38$\times$38 feature map drives small-object degradation.
-  \item We identify and explain a GPU latency paradox: despite having fewer FLOPs, MobileNetV2-SSD is $8\times$ \emph{slower} than VGG16-SSD on GPU, with implications for where lightweight detectors should actually be deployed.
+  \item We identify and explain a GPU latency paradox: despite having $3.8\times$ fewer parameters, MobileNetV2-SSD is $2.8\times$ \emph{slower} on GPU yet $10.4\times$ faster on CPU, with concrete implications for where lightweight detectors should actually be deployed.
 \end{itemize}
 
 
@@ -249,15 +249,15 @@ Table~\ref{tab:main_results} summarises accuracy, model size, and inference late
     \toprule
     Model & mAP (\%) $\uparrow$ & Params (M) $\downarrow$ & GPU lat.\ (ms) $\downarrow$ & CPU lat.\ (ms) $\downarrow$ \\
     \midrule
-    VGG16-SSD [1]       & \textbf{77.49} & 26.3          & \textbf{6.44}  & \textit{[fill in]} \\
-    MobileNetV2-SSD     & 54.08          & \textbf{6.9}  & 54.21          & \textit{[fill in]} \\
+    VGG16-SSD [1]       & \textbf{77.49} & 26.3          & 17.98          & 765.15 \\
+    MobileNetV2-SSD     & 54.08          & \textbf{6.9}  & 49.54          & \textbf{73.68} \\
     \midrule
-    \multicolumn{2}{l}{\textit{MobileNet relative to VGG16}} & $3.8\times$ fewer & $8.4\times$ slower & faster \\
+    \multicolumn{2}{l}{\textit{MobileNet relative to VGG16}} & $3.8\times$ fewer & $2.8\times$ slower & $10.4\times$ faster \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-MobileNetV2-SSD achieves a $3.8\times$ parameter reduction at the cost of 23.4 mAP points (30.2\% relative degradation). Notably, despite having far fewer FLOPs, MobileNetV2-SSD is $8.4\times$ \emph{slower} on GPU — a finding we analyse in Section~\ref{sec:speed}.
+MobileNetV2-SSD achieves a $3.8\times$ parameter reduction at the cost of 23.4 mAP points (30.2\% relative degradation). Notably, despite having far fewer parameters, MobileNetV2-SSD is $2.8\times$ \emph{slower} on GPU but $10.4\times$ faster on CPU — a finding we analyse in Section~\ref{sec:speed}.
 
 \subsection{Per-Class Average Precision}
 
@@ -324,10 +324,10 @@ The medium bucket (32$^2$–96$^2$ px) tells a particularly important story: it 
     \toprule
     Model & GPU (A100) & CPU & Params \\
     \midrule
-    VGG16-SSD       & \textbf{6.44\,ms}  & \textit{[fill]} & 26.3M \\
-    MobileNetV2-SSD & 54.21\,ms          & \textit{[fill]} & 6.9M  \\
+    VGG16-SSD       & 17.98\,ms          & 765.15\,ms           & 26.3M \\
+    MobileNetV2-SSD & 49.54\,ms          & \textbf{73.68\,ms}   & 6.9M  \\
     \midrule
-    Speedup (VGG/MOB) & $0.12\times$ (MobileNet \emph{slower}) & $>\!1\times$ (MobileNet faster) & \\
+    Speedup (VGG/MOB) & $2.8\times$ (MobileNet \emph{slower}) & $10.4\times$ (MobileNet faster) & \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -335,14 +335,14 @@ The medium bucket (32$^2$–96$^2$ px) tells a particularly important story: it 
 \paragraph{The GPU latency paradox.}
 MobileNetV2 is designed around depthwise separable convolutions, which decompose a standard $k{\times}k$ convolution into a depthwise (per-channel) convolution followed by a $1{\times}1$ pointwise convolution. This reduces FLOPs by approximately $1/k^2$ (roughly $9\times$ for $3{\times}3$ kernels), and is the source of MobileNetV2's parameter and compute efficiency on CPU.
 
-On GPU, however, this decomposition is harmful. Modern GPUs achieve peak throughput through \emph{massive parallelism across channels and spatial positions simultaneously}. Standard convolutions — especially VGG16's wide ($\geq$512 channel) layers — saturate thousands of CUDA cores in a single kernel launch. Depthwise convolutions, by contrast, process each channel independently in a narrow kernel, issuing many small, memory-bandwidth-limited operations. The GPU sits largely underutilised between kernel launches. Empirically, this results in MobileNetV2-SSD running $8.4\times$ slower than VGG16-SSD on the A100.
+On GPU, however, this decomposition is harmful. Modern GPUs achieve peak throughput through \emph{massive parallelism across channels and spatial positions simultaneously}. Standard convolutions — especially VGG16's wide ($\geq$512 channel) layers — saturate thousands of CUDA cores in a single kernel launch. Depthwise convolutions, by contrast, process each channel independently in a narrow kernel, issuing many small, memory-bandwidth-limited operations. The GPU sits largely underutilised between kernel launches. Empirically, this results in MobileNetV2-SSD running $2.8\times$ slower than VGG16-SSD on the A100 (49.5\,ms vs.\ 18.0\,ms), despite its substantial parameter reduction.
 
-On CPU, the equation inverts. Mobile CPUs have narrow SIMD units (typically 128–256 bit), and the channel-parallel advantage of standard convolutions does not materialise. Depthwise separable convolutions reduce total arithmetic work and fit better in cache, so MobileNetV2 achieves lower latency on CPU — exactly the deployment target it was designed for.
+On CPU, the equation inverts sharply. CPUs have narrow SIMD units (typically 128–256 bit) and the channel-parallel advantage of standard convolutions does not materialise. Depthwise separable convolutions reduce total arithmetic work and fit better in cache, so MobileNetV2-SSD achieves $10.4\times$ lower latency than VGG16-SSD on CPU (73.7\,ms vs.\ 765.2\,ms) — exactly the deployment scenario it was designed for.
 
 \subsection{Analysis and Discussion}
 
 \paragraph{Accuracy–efficiency tradeoff.}
-MobileNetV2-SSD achieves a $3.8\times$ parameter reduction but pays a 30.2\% relative mAP penalty. This is a poor tradeoff on GPU, where VGG16-SSD is both more accurate \emph{and} faster. The tradeoff only becomes favourable on CPU or mobile hardware.
+MobileNetV2-SSD achieves a $3.8\times$ parameter reduction but pays a 30.2\% relative mAP penalty. On GPU, this is an unfavourable tradeoff in both dimensions: VGG16-SSD is simultaneously more accurate \emph{and} $2.8\times$ faster. The tradeoff becomes genuinely favourable only on CPU, where MobileNetV2-SSD is $10.4\times$ faster than VGG16-SSD — a compelling speedup for edge deployments.
 
 \paragraph{Scale-dependent degradation.}
 The size-stratified analysis reveals that the mAP gap is not uniformly distributed across object sizes. On large objects ($\geq$96$^2$ px), both models achieve strong performance and MobileNetV2 retains 77.9\% of VGG16's AP — a usable detection rate. On small objects, both models essentially fail, with MobileNetV2 near chance performance (0.03\%). The practical implication is that MobileNetV2-SSD could be viable in controlled deployments where detected objects are large relative to the image — for example, detecting vehicles at close range or identifying large industrial equipment — but is unsuitable for applications where small-object recall matters, such as pedestrian detection at distance, aerial imagery analysis, or crowd counting.
@@ -358,7 +358,7 @@ The standard SSD paper trains on VOC 2007+2012 combined ($\approx$16,551 images)
 
 We presented a controlled comparison of VGG16 and MobileNetV2 as backbone networks within an otherwise-identical SSD object detection framework, evaluated on Pascal VOC 2007. By holding the detection head, loss function, anchor configuration, augmentation pipeline, and evaluation protocol fixed, our experiment isolates the effect of backbone choice on accuracy, model size, and inference latency.
 
-Our main findings are three-fold. First, replacing VGG16 with MobileNetV2 reduces parameter count by $3.8\times$ (26.3M $\to$ 6.9M) but costs 23.4 mAP points (77.49\% $\to$ 54.08\%), with the degradation concentrated heavily at small and medium object scales. The size-stratified analysis shows MobileNetV2 retains only 1.5\% of VGG16's small-object AP versus 77.9\% on large objects, directly confirming that the missing 38$\times$38 feature map is the structural bottleneck. Second, we identify a GPU latency paradox: despite its FLOP reduction, MobileNetV2-SSD is $8.4\times$ slower than VGG16-SSD on a modern A100 GPU, because depthwise separable convolutions are memory-bandwidth-bound and underutilise GPU parallelism. The efficiency benefit of MobileNetV2 materialises only on CPU. Third, these results clarify the deployment envelope for lightweight SSD variants: MobileNetV2-SSD is viable for CPU-based edge deployments where objects are large (surveillance, close-range vehicle detection), but is unsuitable for applications requiring small-object recall or GPU-accelerated inference.
+Our main findings are three-fold. First, replacing VGG16 with MobileNetV2 reduces parameter count by $3.8\times$ (26.3M $\to$ 6.9M) but costs 23.4 mAP points (77.49\% $\to$ 54.08\%), with the degradation concentrated heavily at small and medium object scales. The size-stratified analysis shows MobileNetV2 retains only 1.5\% of VGG16's small-object AP versus 77.9\% on large objects, directly confirming that the missing 38$\times$38 feature map is the structural bottleneck. Second, we identify a GPU latency paradox: despite its parameter reduction, MobileNetV2-SSD is $2.8\times$ slower than VGG16-SSD on GPU (49.5\,ms vs.\ 18.0\,ms) because depthwise separable convolutions underutilise GPU parallelism. On CPU, however, MobileNetV2-SSD is $10.4\times$ faster (73.7\,ms vs.\ 765.2\,ms), confirming that its efficiency benefit is realised only on the hardware it was designed for. Third, these results clarify the deployment envelope for lightweight SSD variants: MobileNetV2-SSD is viable for CPU-based edge deployments where objects are large (surveillance, close-range vehicle detection), but is unsuitable for applications requiring small-object recall or GPU-accelerated inference.
 
 Several limitations bound the scope of our conclusions. MobileNetV2-SSD was trained on VOC 2007 trainval only for 50 epochs (approximately 7,800 iterations), while the standard SSD protocol uses VOC 2007+2012 for 120,000 iterations — a roughly $5\times$ gap in training budget. It is plausible that additional training narrows the mAP gap, particularly in the medium-size regime. Future work should (i) train MobileNetV2-SSD under the full 2007+2012 protocol to enable a fair apples-to-apples comparison; (ii) evaluate on the larger COCO benchmark, whose small-object split is more challenging; (iii) replace the VGG16-style detection head with SSD-Lite — a head designed specifically for MobileNetV2 that uses depthwise separable convolutions in the prediction layers — which may recover some accuracy while maintaining parameter efficiency; and (iv) measure latency on actual mobile hardware (e.g., ARM Cortex-A CPU, Apple Neural Engine) to validate the CPU efficiency claims in a real deployment context.
 
