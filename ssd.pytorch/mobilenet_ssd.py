@@ -27,7 +27,7 @@ class MobileNetV2SSD(nn.Module):
         # Build and cache prior boxes using the MobileNet-specific config
         self.priorbox = PriorBox(self.cfg)
         with torch.no_grad():
-            self.priors = self.priorbox.forward()
+            self.register_buffer('priors', self.priorbox.forward())
 
         mobilenet = models.mobilenet_v2(pretrained=True)
         features = mobilenet.features
@@ -91,13 +91,13 @@ class MobileNetV2SSD(nn.Module):
             return self.detect(
                 loc.view(loc.size(0), -1, 4),
                 self.softmax(cls.view(cls.size(0), -1, self.num_classes)),
-                self.priors.type(type(loc.data))
+                self.priors.to(loc.device)
             )
         else:
             return (
                 loc.view(loc.size(0), -1, 4),
                 cls.view(cls.size(0), -1, self.num_classes),
-                self.priors.type(type(loc.data))
+                self.priors.to(loc.device)
             )
 
 
